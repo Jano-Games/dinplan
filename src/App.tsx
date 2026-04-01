@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { AuthGuard } from "@/components/AuthGuard";
 import { AppShell } from "@/components/AppShell";
 import { AlarmOverlay } from "@/components/AlarmOverlay";
+import { NotificationOverlay } from "@/components/NotificationOverlay";
 import Tasks from "@/pages/Tasks";
 import Plans from "@/pages/Plans";
 import Routines from "@/pages/Routines";
@@ -17,6 +18,7 @@ export default function App() {
         <Toaster position="top-center" />
         <AuthGuard>
           <AlarmOverlay />
+          <NotificationOverlay />
           <Routes>
             <Route element={<AppShell />}>
               <Route path="/" element={<Tasks />} />

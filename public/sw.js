@@ -34,13 +34,22 @@ self.addEventListener('push', (event) => {
       body: data.body,
       icon: '/favicon.svg',
       badge: '/favicon.svg',
-      vibrate: [200, 100, 200, 100, 200],
+      image: data.image || undefined,
+      vibrate: [300, 100, 300, 100, 300, 100, 300],
       tag: data.tag || 'dinplan-reminder',
       renotify: true,
       requireInteraction: true,
+      silent: false,
+      data: {
+        title: data.title,
+        body: data.body,
+        reminderId: data.reminderId || data.tag,
+        url: data.url || '/',
+      },
       actions: [
-        { action: 'dismiss', title: 'Dismiss' },
-        { action: 'snooze', title: 'Snooze 5m' },
+        { action: 'view', title: '👀 View' },
+        { action: 'snooze', title: '⏰ Snooze 5m' },
+        { action: 'dismiss', title: '✕ Dismiss' },
       ],
     })
   );
@@ -49,7 +58,12 @@ self.addEventListener('push', (event) => {
 // Notification click
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  
+  const notifData = event.notification.data || {};
+
+  if (event.action === 'dismiss') {
+    return;
+  }
+
   if (event.action === 'snooze') {
     // Snooze — show again in 5 minutes
     setTimeout(() => {
@@ -57,21 +71,35 @@ self.addEventListener('notificationclick', (event) => {
         body: event.notification.body,
         icon: '/favicon.svg',
         badge: '/favicon.svg',
-        vibrate: [200, 100, 200],
+        vibrate: [300, 100, 300, 100, 300],
         tag: 'dinplan-reminder-snoozed',
         requireInteraction: true,
+        data: notifData,
+        actions: [
+          { action: 'view', title: '👀 View' },
+          { action: 'dismiss', title: '✕ Dismiss' },
+        ],
       });
     }, 5 * 60 * 1000);
     return;
   }
 
-  // Open app on click
+  // Open app with notification data (view action or body click)
+  const urlWithParams = `/?notification=true&title=${encodeURIComponent(notifData.title || '')}&body=${encodeURIComponent(notifData.body || '')}&id=${encodeURIComponent(notifData.reminderId || '')}`;
+
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
       if (clients.length > 0) {
+        // Post message to existing window
+        clients[0].postMessage({
+          type: 'NOTIFICATION_CLICK',
+          title: notifData.title,
+          body: notifData.body,
+          reminderId: notifData.reminderId,
+        });
         return clients[0].focus();
       }
-      return self.clients.openWindow('/');
+      return self.clients.openWindow(urlWithParams);
     })
   );
 });
